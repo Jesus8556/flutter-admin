@@ -101,6 +101,7 @@ class _RegisterPageState extends State<RegisterPage> {
       );
     } else {
       final apiUrl = 'https://parking-back-pt6g.onrender.com/api/auth/signup';
+      //final apiUrl = 'http://192.168.1.7:3000/api/auth/signup';
       try {
         final response = await http.post(
           Uri.parse(apiUrl),

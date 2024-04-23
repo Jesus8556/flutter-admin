@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -9,13 +11,22 @@ class Garage {
   final String id;
   final String address;
   final String description;
+  final String imageUrl;
+  final String pricePerHour;
+  final double latitude;
+  final double longitude;// URL de la imagen del garaje
   bool isAvailable;
 
   Garage({
     required this.id,
     required this.address,
     required this.description,
+    required this.imageUrl, // Agregar la imagen
     required this.isAvailable,
+    required this.pricePerHour,
+    required this.latitude,
+    required this.longitude,
+
   });
 
   factory Garage.fromJson(Map<String, dynamic> json) {
@@ -23,7 +34,11 @@ class Garage {
       id: json['_id'],
       address: json['address'],
       description: json['description'],
-      isAvailable: json['isAvailable'] == 'true',
+      imageUrl: json['imagen']["secure_url"],
+      isAvailable: json['isAvailable'],
+      pricePerHour: json["pricePerHour"].toString(),
+      latitude: json["latitud"],
+      longitude:json["longitud"]
     );
   }
 }
@@ -48,6 +63,7 @@ class _GaragePageState extends State<GaragePage> {
 
     final response = await http.get(
       Uri.parse('https://parking-back-pt6g.onrender.com/api/garage'),
+      //Uri.parse('http://192.168.1.7:3000/api/garage'),
       headers: {'x-access-token': token},
     );
 
@@ -65,6 +81,93 @@ class _GaragePageState extends State<GaragePage> {
         SnackBar(content: Text('Error al cargar garajes')),
       );
     }
+  }
+
+  // Función para actualizar la disponibilidad del garaje usando PUT
+  Future<void> _updateGarageAvailability(
+      Garage garage, bool newAvailability) async {
+    String token = Provider.of<AuthState>(context, listen: false).token;
+
+    final updatedGarage = {
+      'address': garage.address,
+      'description': garage.description,
+      'isAvailable': newAvailability.toString(),
+    };
+
+    final response = await http.put(
+      Uri.parse('https://parking-back-pt6g.onrender.com/api/garage/${garage.id}'),
+      //Uri.parse('http://192.168.1.7:3000/api/garage/${garage.id}'),
+      headers: {
+        'x-access-token': token,
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(updatedGarage), // Enviar todos los datos del recurso
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        garage.isAvailable = newAvailability; // Actualizar el estado local
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al actualizar la disponibilidad')),
+      );
+    }
+  }
+
+  Future<void> _deleteGarage(String garageId) async {
+    String token = Provider.of<AuthState>(context, listen: false).token;
+
+    final response = await http.delete(
+      Uri.parse('https://parking-back-pt6g.onrender.com/api/garage/$garageId'),
+      //Uri.parse('http://192.168.1.7:3000/api/garage/$garageId'),
+      headers: {'x-access-token': token},
+    );
+    print(garageId);
+
+    if (response.statusCode == 200) {
+      setState(() {
+        garages.removeWhere((garage) => garage.id == garageId);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Garaje eliminado con éxito')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al eliminar el garaje')),
+      );
+    }
+  }
+
+  Future<bool> _confirmDelete(String garageId) async {
+    final confirmed = await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Eliminar Garaje'),
+          content: Text('¿Estás seguro de que quieres eliminar este garaje?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(
+                    context, false); // Cerrar el diálogo y devolver false
+              },
+              child: Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                _deleteGarage(garageId);
+                Navigator.pop(
+                    context, true); // Cerrar el diálogo y devolver true
+              },
+              child: Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return confirmed ?? false; // Si confirmed es null, devuelve false
   }
 
   @override
@@ -106,37 +209,56 @@ class _GaragePageState extends State<GaragePage> {
                   itemCount: garages.length,
                   itemBuilder: (context, index) {
                     final garage = garages[index];
-                    return ListTile(
-                      title: Text(garage.address),
-                      subtitle: Text(garage.description),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Switch(
-                            value: garage.isAvailable,
-                            onChanged: (value) {
-                              // Cambiar disponibilidad
-                              final newAvailability = !garage.isAvailable;
-                              final updatedGarage = Garage(
-                                id: garage.id,
-                                address: garage.address,
-                                description: garage.description,
-                                isAvailable: newAvailability,
-                              );
+                    return Dismissible(
+                      key: Key(garage.id),
+                      direction: DismissDirection.endToStart,
+                      confirmDismiss: (direction) async {
+                        return await _confirmDelete(
+                            garage.id); // Mostrar diálogo de confirmación
+                      },
+                      background: Container(
+                        color:
+                            Colors.red, // Fondo rojo para indicar eliminación
+                        alignment: Alignment.centerRight,
+                        padding: EdgeInsets.only(right: 20),
+                        child: Icon(Icons.delete,
+                            color: Colors.white), // Icono de eliminación
+                      ),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: NetworkImage(garage.imageUrl),
+                        ),
+                        title: Text(garage.address),
+                        subtitle: Text(garage.description),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Switch(
+                              value: garage.isAvailable,
+                              onChanged: (value) {
+                                // Cambiar disponibilidad
+                                _updateGarageAvailability(garage, value);
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.edit),
+                              color: Colors.blue,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AddGaragePage(
+                                      garage:
+                                          garage, // Pasar el garaje a actualizar
+                                    ),
+                                  ),
+                                );
 
-                              setState(() {
-                                garages[index] = updatedGarage;
-                              });
-                            },
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.delete),
-                            color: Colors.red,
-                            onPressed: () {
-                              // Código para eliminar el garaje
-                            },
-                          ),
-                        ],
+                                // Código para eliminar el garaje
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -145,17 +267,20 @@ class _GaragePageState extends State<GaragePage> {
         children: [
           Align(
             alignment: Alignment.bottomRight,
-            child: Padding(padding: EdgeInsets.only(bottom: 50),
-            child: FloatingActionButton(
-              onPressed:(){
-                Navigator.push(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 50),
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => AddGaragePage()),
                   );
-              } ,
-              child: Icon(Icons.add),
-              tooltip: "Crear nuevo garage",
-              ),),)
+                },
+                child: Icon(Icons.add),
+                tooltip: "Crear nuevo garage",
+              ),
+            ),
+          )
         ],
       ),
     );

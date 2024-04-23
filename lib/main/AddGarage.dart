@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'dart:convert';
 import "package:proyectogaraje/AuthState.dart";
 import 'package:provider/provider.dart';
 import 'package:proyectogaraje/main/LocationPickerPage.dart';
 import 'package:proyectogaraje/screen/NavigationBarApp.dart';
-
+import 'package:proyectogaraje/main/Garage.dart';
 
 class AddGaragePage extends StatefulWidget {
+  final Garage? garage; // Parámetro opcional para garaje existente
+  AddGaragePage({this.garage});
+
   @override
   _AddGaragePageState createState() => _AddGaragePageState();
 }
@@ -18,15 +20,35 @@ class _AddGaragePageState extends State<AddGaragePage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-    final TextEditingController _pricePerHourController = TextEditingController();
+  final TextEditingController _pricePerHourController = TextEditingController();
 
   bool _isAvailable = true;
   File? _selectedImage;
   double? _latitude;
   double? _longitude;
 
+  @override
+  void initState() {
+    super.initState();
+
+    // Precargar los datos si estamos editando
+    if (widget.garage != null) {
+      final garage = widget.garage!;
+      _addressController.text = garage.address;
+      _descriptionController.text = garage.description;
+      _pricePerHourController.text = garage.pricePerHour.toString();
+      _isAvailable = garage.isAvailable;
+      if (garage.latitude != null && garage.longitude != null) {
+        _latitude = garage.latitude!;
+        _longitude = garage.longitude!;
+      }
+    }
+  }
+
   Future<void> _submitForm(String token) async {
-    if (_addressController.text.isEmpty || _latitude == null || _longitude == null) {
+    if (_addressController.text.isEmpty ||
+        _latitude == null ||
+        _longitude == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Debes agregar una ubicación.")),
       );
@@ -34,11 +56,15 @@ class _AddGaragePageState extends State<AddGaragePage> {
     }
 
     if (_formKey.currentState!.validate()) {
+      final isUpdating = widget.garage != null;
+
       final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('https://parking-back-pt6g.onrender.com/api/garage'),
+        isUpdating ? 'PUT' : 'POST',
+        Uri.parse(isUpdating
+            ? 'https://parking-back-pt6g.onrender.com/api/garage/${widget.garage!.id}'
+            : 'https://parking-back-pt6g.onrender.com/api/garage'),
       );
-      request.headers['x-access-token'] = token; 
+      request.headers['x-access-token'] = token;
 
       request.fields['address'] = _addressController.text;
       request.fields['description'] = _descriptionController.text;
@@ -57,13 +83,15 @@ class _AddGaragePageState extends State<AddGaragePage> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Garage creado exitosamente')),
+          SnackBar(
+              content: Text(isUpdating
+                  ? 'Garage actualizado con éxito'
+                  : 'Garage creado con éxito')),
         );
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => NavigationBarApp()),
         );
-
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error creando el garage')),
@@ -73,7 +101,8 @@ class _AddGaragePageState extends State<AddGaragePage> {
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
@@ -87,7 +116,9 @@ class _AddGaragePageState extends State<AddGaragePage> {
     String token = Provider.of<AuthState>(context).token;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Agregar Garage'),
+        title: Text(widget.garage == null
+            ? 'Agregar Garage'
+            : 'Actualizar Garage'), // Título dinámico
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -95,27 +126,26 @@ class _AddGaragePageState extends State<AddGaragePage> {
           key: _formKey,
           child: ListView(
             children: [
-              
               ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LocationPickerPage(
-                      onLocationSelected: (lat, lon, address) {
-                        setState(() {
-                          _latitude = lat;
-                          _longitude = lon;
-                          _addressController.text = address;
-                        });
-                      },
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LocationPickerPage(
+                        onLocationSelected: (lat, lon, address) {
+                          setState(() {
+                            _latitude = lat;
+                            _longitude = lon;
+                            _addressController.text = address;
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                );
-              },
-              child: Text("Agregar Ubicación"),
-            ),
-            TextFormField(
+                  );
+                },
+                child: Text("Agregar Ubicación"),
+              ),
+              TextFormField(
                 controller: _addressController,
                 decoration: InputDecoration(
                   labelText: 'Dirección',
@@ -160,7 +190,6 @@ class _AddGaragePageState extends State<AddGaragePage> {
                   return null;
                 },
               ),
-
               Row(
                 children: [
                   Text('Disponible'),
@@ -184,7 +213,7 @@ class _AddGaragePageState extends State<AddGaragePage> {
                 child: Text('Cargar Imagen'),
               ),
               ElevatedButton(
-                onPressed:() => _submitForm(token),
+                onPressed: () => _submitForm(token),
                 child: Text('Enviar'),
               ),
             ],
