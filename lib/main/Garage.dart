@@ -1,4 +1,3 @@
-import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -62,7 +61,7 @@ class _GaragePageState extends State<GaragePage> {
     String token = Provider.of<AuthState>(context, listen: false).token;
 
     final response = await http.get(
-      Uri.parse('https://parking-back-pt6g.onrender.com/api/garage'),
+      Uri.parse('https://test-2-slyp.onrender.com/api/garage'),
       //Uri.parse('http://192.168.1.7:3000/api/garage'),
       headers: {'x-access-token': token},
     );
@@ -95,7 +94,7 @@ class _GaragePageState extends State<GaragePage> {
     };
 
     final response = await http.put(
-      Uri.parse('https://parking-back-pt6g.onrender.com/api/garage/${garage.id}'),
+      Uri.parse('https://test-2-slyp.onrender.com/api/garage/${garage.id}'),
       //Uri.parse('http://192.168.1.7:3000/api/garage/${garage.id}'),
       headers: {
         'x-access-token': token,
@@ -119,7 +118,7 @@ class _GaragePageState extends State<GaragePage> {
     String token = Provider.of<AuthState>(context, listen: false).token;
 
     final response = await http.delete(
-      Uri.parse('https://parking-back-pt6g.onrender.com/api/garage/$garageId'),
+      Uri.parse('https://test-2-slyp.onrender.com/api/garage/$garageId'),
       //Uri.parse('http://192.168.1.7:3000/api/garage/$garageId'),
       headers: {'x-access-token': token},
     );

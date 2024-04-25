@@ -61,8 +61,8 @@ class _AddGaragePageState extends State<AddGaragePage> {
       final request = http.MultipartRequest(
         isUpdating ? 'PUT' : 'POST',
         Uri.parse(isUpdating
-            ? 'https://parking-back-pt6g.onrender.com/api/garage/${widget.garage!.id}'
-            : 'https://parking-back-pt6g.onrender.com/api/garage'),
+            ? 'https://test-2-slyp.onrender.com/api/garage/${widget.garage!.id}'
+            : 'https://test-2-slyp.onrender.com/api/garage/'),
       );
       request.headers['x-access-token'] = token;
 

@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:proyectogaraje/screen/NavigationBarApp.dart';
 import 'package:proyectogaraje/screen/login.dart';
+import "package:proyectogaraje/AuthState.dart";
+
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -100,7 +103,7 @@ class _RegisterPageState extends State<RegisterPage> {
         },
       );
     } else {
-      final apiUrl = 'https://parking-back-pt6g.onrender.com/api/auth/signup';
+      final apiUrl = 'https://test-2-slyp.onrender.com/api/auth/signup';
       //final apiUrl = 'http://192.168.1.7:3000/api/auth/signup';
       try {
         final response = await http.post(
@@ -115,11 +118,15 @@ class _RegisterPageState extends State<RegisterPage> {
         );
 
         if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body);
+          String token = responseData['token'];
+          Provider.of<AuthState>(context, listen: false).setToken(token);
+
           // Registro exitoso, redirige al usuario a la página de perfil
           Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => NavigationBarApp()),
-          );
+          context,
+          MaterialPageRoute(builder: (context) => NavigationBarApp()),
+        );
         } else {
           // Error en el registro, muestra un mensaje de error
           showDialog(
