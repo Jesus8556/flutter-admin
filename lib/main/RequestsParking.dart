@@ -54,9 +54,13 @@ class Oferta {
   });
 
   factory Oferta.fromJson(Map<String, dynamic> json) {
-    var garajesList = (json['garajesCercanos'] as List)
-        .map((garaje) => GarajeCercano.fromJson(garaje))
-        .toList();
+    var garajesList = <GarajeCercano>[];
+    if (json.containsKey('garajesCercanos') &&
+        json['garajesCercanos'] != null) {
+      garajesList = (json['garajesCercanos'] as List)
+          .map((garaje) => GarajeCercano.fromJson(garaje))
+          .toList();
+    }
 
     return Oferta(
       id: json['_id'],
@@ -107,6 +111,22 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
         }
       }
     });
+    socket.on('oferta_eliminada', (data) {
+      if (mounted) {
+        try {
+          if (data != null && data is Map<String, dynamic>) {
+            setState(() {
+              ofertas.removeWhere((oferta) =>
+                  oferta.id ==
+                  data['ofertaId']); // Eliminar la oferta por su ID
+            });
+          }
+        } catch (e) {
+          print('Error al procesar la oferta eliminada: $e');
+
+        }
+      }
+    });
   }
 
   Future<List<Oferta>> fetchOfertasCercanas() async {
@@ -124,9 +144,6 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
     );
 
     if (response.statusCode == 200) {
-      print(
-          "Respuesta recibida: ${response.body}"); // Para verificar el contenido
-
       List<dynamic> data = json.decode(response.body);
       return data.map((e) => Oferta.fromJson(e)).toList();
     } else {
@@ -200,11 +217,11 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
     );
 
     if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Oferta ignorada con éxito'),
       ));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Error al ignorar la oferta'),
       ));
     }
@@ -219,7 +236,7 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(
+          title: const Text(
             "Opciones de oferta",
             style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -252,8 +269,8 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
                             text: monto
                                 .toStringAsFixed(2), // Muestra dos decimales
                           ),
-                          keyboardType:
-                              TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: InputDecoration(
                             labelText: 'Monto',
                             suffixIcon: IconButton(
@@ -336,7 +353,8 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
                     ),
                   );
                 } else {
-                  enviarContraoferta(oferta.id, monto,garajeSeleccionadoId!); // Enviar la contraoferta
+                  enviarContraoferta(oferta.id, monto,
+                      garajeSeleccionadoId!); // Enviar la contraoferta
                   Navigator.pop(context); // Cerrar el diálogo
                 }
               },
@@ -359,7 +377,6 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error al cargar las ofertas'));
-            return Center(child: Text('Error: ${snapshot.error}'));
           } else {
             final ofertas = snapshot.data ?? [];
             return ListView.builder(
@@ -372,10 +389,10 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
                   direction: DismissDirection.endToStart,
                   background: Container(
                     color: Colors.red,
-                    child: Align(
+                    child: const Align(
                       alignment: Alignment.centerRight,
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16),
                         child: Icon(Icons.delete, color: Colors.white),
                       ),
                     ),
@@ -411,7 +428,7 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
                         oferta.id); // Ignorar la oferta en el backend
 
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
+                      const SnackBar(
                         content: Text('Oferta ignorada'),
                       ),
                     );
@@ -431,10 +448,11 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
                             children: [
                               Text(
                                 'Monto: S/${oferta.monto.toStringAsFixed(2)}',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                               Text(
-                                'Tipo de oferta: ${oferta.filtroAlquiler ? "Oferta por hora" : "Oferta por noche"}',
+                                'Tipo de oferta: ${oferta.filtroAlquiler ? "Oferta por noche" : "Oferta por hora"}',
                               ),
                               Text('Usuario: ${oferta.name}'),
                             ],
@@ -442,13 +460,12 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
                           Column(
                             children: [
                               IconButton(
-                                icon: Icon(Icons.check),
+                                icon: const Icon(Icons.check),
                                 tooltip: 'Opciones',
                                 onPressed: () {
                                   mostrarDialogoContraoferta(oferta);
                                 },
                               ),
-                              
                             ],
                           ),
                         ],
