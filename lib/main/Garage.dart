@@ -66,7 +66,7 @@ class _GaragePageState extends State<GaragePage> {
       headers: {'x-access-token': token},
     );
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200|| response.statusCode == 201) {
       List<dynamic> data = jsonDecode(response.body);
       setState(() {
         garages = data.map((item) => Garage.fromJson(item)).toList();

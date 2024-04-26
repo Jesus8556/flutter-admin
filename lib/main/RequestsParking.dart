@@ -7,6 +7,29 @@ import 'package:proyectogaraje/AuthState.dart';
 import 'package:proyectogaraje/socket_service.dart';
 
 // Modelo para representar las ofertas cercanas
+class GarajeCercano {
+  final String id;
+  final String address;
+  final double latitud;
+  final double longitud;
+
+  GarajeCercano({
+    required this.id,
+    required this.address,
+    required this.latitud,
+    required this.longitud,
+  });
+
+  factory GarajeCercano.fromJson(Map<String, dynamic> json) {
+    return GarajeCercano(
+      id: json['id'],
+      address: json['address'],
+      latitud: json['latitud'].toDouble(),
+      longitud: json['longitud'].toDouble(),
+    );
+  }
+}
+
 class Oferta {
   final String id;
   final bool filtroAlquiler;
@@ -16,6 +39,7 @@ class Oferta {
   final double latitud;
   final double longitud;
   final DateTime createdAt;
+  final List<GarajeCercano> garajesCercanos;
 
   Oferta({
     required this.id,
@@ -26,18 +50,24 @@ class Oferta {
     required this.latitud,
     required this.longitud,
     required this.createdAt,
+    required this.garajesCercanos,
   });
 
   factory Oferta.fromJson(Map<String, dynamic> json) {
+    var garajesList = (json['garajesCercanos'] as List)
+        .map((garaje) => GarajeCercano.fromJson(garaje))
+        .toList();
+
     return Oferta(
       id: json['_id'],
       filtroAlquiler: json['filtroAlquiler'],
       monto: json['monto'].toDouble(),
       user: json['user'],
-      name: json['name'],
+      name: json['name'] ?? "",
       latitud: json['latitud'].toDouble(),
       longitud: json['longitud'].toDouble(),
       createdAt: DateTime.parse(json['createdAt']),
+      garajesCercanos: garajesList,
     );
   }
 }
@@ -83,7 +113,8 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
     String token = Provider.of<AuthState>(context, listen: false).token;
     Map<String, dynamic> decodedToken = _decodeToken(token);
     String userId = decodedToken['id'];
-    String url = 'https://test-2-slyp.onrender.com/api/oferta/oferta-cercana/$userId';
+    String url =
+        'https://test-2-slyp.onrender.com/api/oferta/oferta-cercana/$userId';
 
     final response = await http.get(
       Uri.parse(url),
@@ -93,6 +124,9 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
     );
 
     if (response.statusCode == 200) {
+      print(
+          "Respuesta recibida: ${response.body}"); // Para verificar el contenido
+
       List<dynamic> data = json.decode(response.body);
       return data.map((e) => Oferta.fromJson(e)).toList();
     } else {
@@ -128,6 +162,192 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
     return utf8.decode(base64Url.decode(output));
   }
 
+  Future<void> enviarContraoferta(
+      String ofertaId, double monto, String garajeId) async {
+    String token = Provider.of<AuthState>(context, listen: false).token;
+
+    final response = await http.post(
+      Uri.parse('https://test-2-slyp.onrender.com/api/contraoferta/$ofertaId'),
+      headers: {
+        'x-access-token': token,
+        'Content-Type': 'application/json',
+      },
+      body:
+          jsonEncode({'monto': monto, 'oferta': ofertaId, 'garage': garajeId}),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Contraoferta enviada con éxito'),
+      ));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error al enviar contraoferta'),
+      ));
+    }
+  }
+
+  Future<void> ignorarOferta(String ofertaId) async {
+    String token = Provider.of<AuthState>(context, listen: false).token;
+
+    final response = await http.post(
+      Uri.parse(
+          'https://test-2-slyp.onrender.com/api/oferta/ignorar/$ofertaId'),
+      headers: {
+        'x-access-token': token,
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Oferta ignorada con éxito'),
+      ));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error al ignorar la oferta'),
+      ));
+    }
+  }
+
+  void mostrarDialogoContraoferta(Oferta oferta) {
+    double monto = oferta.monto; // Monto inicial
+    bool isTextFieldEditable = false;
+    String? garajeSeleccionadoId; // ID del garaje seleccionado
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            "Opciones de oferta",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Mensaje aclaratorio
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10.0),
+                    child: Text(
+                      "Puedes modificar el monto y seleccionar un garaje.",
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+
+                  // Campo de texto para el monto
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: TextEditingController(
+                            text: monto
+                                .toStringAsFixed(2), // Muestra dos decimales
+                          ),
+                          keyboardType:
+                              TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'Monto',
+                            suffixIcon: IconButton(
+                              icon: Icon(Icons.edit),
+                              tooltip: 'Editar monto',
+                              onPressed: () {
+                                setState(() {
+                                  isTextFieldEditable =
+                                      !isTextFieldEditable; // Alterna la editabilidad
+                                });
+                              },
+                            ),
+                          ),
+                          readOnly: !isTextFieldEditable,
+                          onChanged: (value) {
+                            final parsedValue = double.tryParse(value);
+                            if (parsedValue != null) {
+                              setState(() {
+                                monto = parsedValue;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Slider para ajustar el monto
+                  Slider(
+                    value: monto,
+                    min: 0,
+                    max: 50, // Rango del slider
+                    divisions:
+                        100, // Para permitir ajustes finos (0.1 incrementos)
+                    label: monto.toStringAsFixed(
+                        2), // Mostrar el valor con dos decimales
+                    onChanged: (value) {
+                      setState(() {
+                        monto = value; // Actualiza el valor del slider
+                      });
+                    },
+                  ),
+
+                  // Lista desplegable para seleccionar un garaje
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: DropdownButton<String>(
+                      hint: Text("Seleccionar garaje"),
+                      value: garajeSeleccionadoId,
+                      onChanged: (value) {
+                        setState(() {
+                          garajeSeleccionadoId = value;
+                        });
+                      },
+                      items: oferta.garajesCercanos.map((garaje) {
+                        return DropdownMenuItem<String>(
+                          value: garaje.id,
+                          child: Text(garaje.address),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Cerrar el diálogo
+              },
+              child: Text("Cancelar"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (garajeSeleccionadoId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Por favor, selecciona un garaje"),
+                    ),
+                  );
+                } else {
+                  enviarContraoferta(oferta.id, monto,garajeSeleccionadoId!); // Enviar la contraoferta
+                  Navigator.pop(context); // Cerrar el diálogo
+                }
+              },
+              child: Text("Enviar"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -139,51 +359,100 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error al cargar las ofertas'));
+            return Center(child: Text('Error: ${snapshot.error}'));
           } else {
             final ofertas = snapshot.data ?? [];
             return ListView.builder(
               itemCount: ofertas.length,
               itemBuilder: (context, index) {
                 final oferta = ofertas[index];
-                return Card(
-                  margin: const EdgeInsets.all(10),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Monto: S/${oferta.monto.toStringAsFixed(2)}',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              'Tipo de oferta: ${oferta.filtroAlquiler ? "Oferta por hora" : "Oferta por noche"}',
-                            ),
-                            Text('Usuario: ${oferta.name}'),
-                          ],
-                        ),
-                        Column(
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.autorenew),
-                              tooltip: 'Contraoferta',
+
+                return Dismissible(
+                  key: Key(oferta.id),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    color: Colors.red,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Icon(Icons.delete, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  confirmDismiss: (direction) async {
+                    // Mostrar diálogo de confirmación
+                    return await showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text('Ignorar oferta'),
+                          content: Text('¿Desea ignorar esta oferta?'),
+                          actions: [
+                            TextButton(
                               onPressed: () {
-                                // Lógica para contraoferta
+                                Navigator.of(context).pop(false); // No ignorar
                               },
+                              child: Text('Cancelar'),
                             ),
-                            IconButton(
-                              icon: Icon(Icons.close),
-                              tooltip: 'Ignorar',
+                            TextButton(
                               onPressed: () {
-                                // Lógica para ignorar
+                                Navigator.of(context).pop(true); // Ignorar
                               },
+                              child: Text('Sí'),
                             ),
                           ],
-                        ),
-                      ],
+                        );
+                      },
+                    );
+                  },
+                  onDismissed: (direction) async {
+                    await ignorarOferta(
+                        oferta.id); // Ignorar la oferta en el backend
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Oferta ignorada'),
+                      ),
+                    );
+
+                    // Remover oferta de la lista visualmente
+                    ofertas.removeAt(index);
+                  },
+                  child: Card(
+                    margin: const EdgeInsets.all(10),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Monto: S/${oferta.monto.toStringAsFixed(2)}',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'Tipo de oferta: ${oferta.filtroAlquiler ? "Oferta por hora" : "Oferta por noche"}',
+                              ),
+                              Text('Usuario: ${oferta.name}'),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.check),
+                                tooltip: 'Opciones',
+                                onPressed: () {
+                                  mostrarDialogoContraoferta(oferta);
+                                },
+                              ),
+                              
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
