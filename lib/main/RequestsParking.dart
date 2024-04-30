@@ -38,6 +38,7 @@ class Oferta {
   final String? name;
   final double latitud;
   final double longitud;
+  final double hora;
   final DateTime createdAt;
   final List<GarajeCercano> garajesCercanos;
 
@@ -49,6 +50,7 @@ class Oferta {
     required this.name,
     required this.latitud,
     required this.longitud,
+    required this.hora,
     required this.createdAt,
     required this.garajesCercanos,
   });
@@ -68,6 +70,7 @@ class Oferta {
       monto: json['monto'].toDouble(),
       user: json['user'],
       name: json['name'] ?? "",
+      hora:json["hora"].toDouble(),
       latitud: json['latitud'].toDouble(),
       longitud: json['longitud'].toDouble(),
       createdAt: DateTime.parse(json['createdAt']),
@@ -376,6 +379,8 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
+            final error = snapshot.error.toString();
+            print(error);
             return Center(child: Text('Error al cargar las ofertas'));
           } else {
             final ofertas = snapshot.data ?? [];
@@ -453,6 +458,11 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
                               ),
                               Text(
                                 'Tipo de oferta: ${oferta.filtroAlquiler ? "Oferta por noche" : "Oferta por hora"}',
+                              ),
+                              Text(
+                                oferta.filtroAlquiler ? "Numero de noches: ${oferta.hora.toStringAsFixed(2)}" : "Horas de alquiler: ${oferta.hora.toStringAsFixed(2)}",
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                               Text('Usuario: ${oferta.name}'),
                             ],
