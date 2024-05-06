@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:proyectogaraje/main/OfertasAceptadas.dart';
 import 'dart:convert';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:provider/provider.dart';
@@ -70,7 +71,7 @@ class Oferta {
       monto: json['monto'].toDouble(),
       user: json['user'],
       name: json['name'] ?? "",
-      hora:json["hora"].toDouble(),
+      hora: json["hora"].toDouble(),
       latitud: json['latitud'].toDouble(),
       longitud: json['longitud'].toDouble(),
       createdAt: DateTime.parse(json['createdAt']),
@@ -126,7 +127,6 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
           }
         } catch (e) {
           print('Error al procesar la oferta eliminada: $e');
-
         }
       }
     });
@@ -384,6 +384,33 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
             return Center(child: Text('Error al cargar las ofertas'));
           } else {
             final ofertas = snapshot.data ?? [];
+            if (ofertas.isEmpty) {
+              // Muestra un mensaje cuando no hay ofertas disponibles
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.inbox, color: Colors.grey, size: 40),
+                    const SizedBox(height: 10),
+                    Text(
+                      'No hay ofertas cercanas en este momento.',
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      'Vuelve a intentarlo más tarde.',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             return ListView.builder(
               itemCount: ofertas.length,
               itemBuilder: (context, index) {
@@ -460,7 +487,9 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
                                 'Tipo de oferta: ${oferta.filtroAlquiler ? "Oferta por noche" : "Oferta por hora"}',
                               ),
                               Text(
-                                oferta.filtroAlquiler ? "Numero de noches: ${oferta.hora.toStringAsFixed(2)}" : "Horas de alquiler: ${oferta.hora.toStringAsFixed(2)}",
+                                oferta.filtroAlquiler
+                                    ? "Numero de noches: ${oferta.hora.toStringAsFixed(2)}"
+                                    : "Horas de alquiler: ${oferta.hora.toStringAsFixed(2)}",
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold),
                               ),
@@ -486,7 +515,27 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
               },
             );
           }
-        },
+        }, 
+      ),
+      floatingActionButton: Stack(
+        children: [
+          Positioned(
+            bottom: 50, // Elevar el FAB 30 unidades hacia arriba
+            right: 16, // Ubicación desde el borde derecho
+            child: FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(                                
+                    builder: (context) => const OfertasAceptadas(), // Ruta a la nueva ventana
+                  ),
+                );
+              },
+              child: Icon(Icons.add), // Icono del FAB
+              tooltip: 'Ver ofertas aceptadas',
+            ),
+          ),
+        ],
       ),
     );
   }
