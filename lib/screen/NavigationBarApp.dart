@@ -71,8 +71,8 @@ class _NavigationExampleState extends State<NavigationExample> {
         },
         children: [
           GaragePage(), // Página de garages
-          RequestParkingPage(), // Página de solicitudes de parkeo
-          ProfilePage(), // Página de perfil
+          const RequestParkingPage(), // Página de solicitudes de parkeo
+          const ProfileScreen(), // Página de perfil
         ],
       ),
     );

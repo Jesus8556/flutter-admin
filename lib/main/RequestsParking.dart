@@ -372,7 +372,12 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Ofertas Cercanas')),
+      appBar: AppBar(
+        title: Text("Ofertas cercanas", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color.fromARGB(255, 137, 15, 153), // Azul marino oscuro
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      
       body: FutureBuilder<List<Oferta>>(
         future: fetchOfertasCercanas(),
         builder: (context, snapshot) {
@@ -519,20 +524,21 @@ class _RequestParkingPageState extends State<RequestParkingPage> {
       ),
       floatingActionButton: Stack(
         children: [
-          Positioned(
-            bottom: 50, // Elevar el FAB 30 unidades hacia arriba
-            right: 16, // Ubicación desde el borde derecho
-            child: FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(                                
-                    builder: (context) => const OfertasAceptadas(), // Ruta a la nueva ventana
-                  ),
-                );
-              },
-              child: Icon(Icons.add), // Icono del FAB
-              tooltip: 'Ver ofertas aceptadas',
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 50),
+              child: FloatingActionButton(
+                backgroundColor: const Color.fromARGB(255, 137, 15, 153),// Azul marino oscuro
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const OfertasAceptadas()),
+                  );
+                },
+                child: Icon(Icons.add, color: Colors.white),
+                tooltip: "Crear nuevo garage",
+              ),
             ),
           ),
         ],

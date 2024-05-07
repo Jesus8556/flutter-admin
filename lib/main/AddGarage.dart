@@ -118,7 +118,10 @@ class _AddGaragePageState extends State<AddGaragePage> {
       appBar: AppBar(
         title: Text(widget.garage == null
             ? 'Agregar Garage'
-            : 'Actualizar Garage'), // Título dinámico
+            : 'Actualizar Garage',
+            style: TextStyle(color: Colors.white),),
+            backgroundColor: const Color.fromARGB(255, 137, 15, 153), // Azul marino oscuro
+
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

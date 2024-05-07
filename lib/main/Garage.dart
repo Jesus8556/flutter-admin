@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -13,7 +12,7 @@ class Garage {
   final String imageUrl;
   final String pricePerHour;
   final double latitude;
-  final double longitude;// URL de la imagen del garaje
+  final double longitude; // URL de la imagen del garaje
   bool isAvailable;
 
   Garage({
@@ -25,20 +24,18 @@ class Garage {
     required this.pricePerHour,
     required this.latitude,
     required this.longitude,
-
   });
 
   factory Garage.fromJson(Map<String, dynamic> json) {
     return Garage(
-      id: json['_id'],
-      address: json['address'],
-      description: json['description'],
-      imageUrl: json['imagen']["secure_url"],
-      isAvailable: json['isAvailable'],
-      pricePerHour: json["pricePerHour"].toString(),
-      latitude: json["latitud"],
-      longitude:json["longitud"]
-    );
+        id: json['_id'],
+        address: json['address'],
+        description: json['description'],
+        imageUrl: json['imagen']["secure_url"],
+        isAvailable: json['isAvailable'],
+        pricePerHour: json["pricePerHour"].toString(),
+        latitude: json["latitud"],
+        longitude: json["longitud"]);
   }
 }
 
@@ -66,7 +63,7 @@ class _GaragePageState extends State<GaragePage> {
       headers: {'x-access-token': token},
     );
 
-    if (response.statusCode == 200|| response.statusCode == 201) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       List<dynamic> data = jsonDecode(response.body);
       setState(() {
         garages = data.map((item) => Garage.fromJson(item)).toList();
@@ -173,12 +170,15 @@ class _GaragePageState extends State<GaragePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("GARAGE"),
+        title: Text("Garages", style: TextStyle(color: Colors.white)),
+                backgroundColor: const Color.fromARGB(255, 137, 15, 153), // Azul marino oscuro
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: isLoading
           ? Center(
-              child:
-                  CircularProgressIndicator(), // Indicador de carga mientras se obtiene la lista
+              child: CircularProgressIndicator(
+                backgroundColor: const Color.fromARGB(255, 137, 15, 153), // Azul marino oscuro
+              ),
             )
           : garages.isEmpty
               ? Center(
@@ -188,15 +188,22 @@ class _GaragePageState extends State<GaragePage> {
                       Text(
                         'No se encontraron garajes.',
                         style: TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold),
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: const Color.fromARGB(255, 137, 15, 153)), // Azul marino oscuro
                       ),
                       SizedBox(height: 20),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 137, 15, 153), // Azul marino oscuro
+                        ),
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => AddGaragePage()),
+                              builder: (context) => AddGaragePage(),
+                            ),
                           );
                         },
                         child: Text('Crear Garage'),
@@ -212,51 +219,63 @@ class _GaragePageState extends State<GaragePage> {
                       key: Key(garage.id),
                       direction: DismissDirection.endToStart,
                       confirmDismiss: (direction) async {
-                        return await _confirmDelete(
-                            garage.id); // Mostrar diálogo de confirmación
+                        return await _confirmDelete(garage.id);
                       },
                       background: Container(
-                        color:
-                            Colors.red, // Fondo rojo para indicar eliminación
+                        color: Colors.red,
                         alignment: Alignment.centerRight,
                         padding: EdgeInsets.only(right: 20),
-                        child: Icon(Icons.delete,
-                            color: Colors.white), // Icono de eliminación
-                      ),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: NetworkImage(garage.imageUrl),
+                        child: Icon(
+                          Icons.delete,
+                          color: Colors.white,
                         ),
-                        title: Text(garage.address),
-                        subtitle: Text(garage.description),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Switch(
-                              value: garage.isAvailable,
-                              onChanged: (value) {
-                                // Cambiar disponibilidad
-                                _updateGarageAvailability(garage, value);
-                              },
+                      ),
+                      child: Card(
+                        elevation: 3,
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage: NetworkImage(garage.imageUrl),
+                          ),
+                          title: Text(
+                            garage.address,
+                            style: TextStyle(
+                              color: const Color.fromARGB(
+                                  255, 0, 0, 0), // Azul marino oscuro
                             ),
-                            IconButton(
-                              icon: Icon(Icons.edit),
-                              color: Colors.blue,
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AddGaragePage(
-                                      garage:
-                                          garage, // Pasar el garaje a actualizar
+                          ),
+                          subtitle: Text(
+                            garage.description,
+                            style: TextStyle(
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Switch(
+                                value: garage.isAvailable,
+                                onChanged: (value) {
+                                  _updateGarageAvailability(garage, value);
+                                },
+                                activeColor: const Color.fromARGB(255, 137, 15, 153),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.edit),
+                                color: const Color.fromARGB(255, 137, 15, 153),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          AddGaragePage(garage: garage),
                                     ),
-                                  ),
-                                );
-
-                                // Código para eliminar el garaje
-                              },
-                            ),
-                          ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -269,17 +288,18 @@ class _GaragePageState extends State<GaragePage> {
             child: Padding(
               padding: EdgeInsets.only(bottom: 50),
               child: FloatingActionButton(
+                backgroundColor: const Color.fromARGB(255, 137, 15, 153), // Azul marino oscuro
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => AddGaragePage()),
                   );
                 },
-                child: Icon(Icons.add),
+                child: Icon(Icons.add, color: Colors.white),
                 tooltip: "Crear nuevo garage",
               ),
             ),
-          )
+          ),
         ],
       ),
     );

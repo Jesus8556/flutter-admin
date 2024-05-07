@@ -46,6 +46,9 @@ dependencies:
   socket_io_client: ^2.0.3+1
   onesignal_flutter: ^5.1.6
   uuid: ^4.4.0
+  font_awesome_flutter: ^10.0.0
+  adaptive_theme: ^3.6.0
+
 
 dev_dependencies:
   flutter_test:

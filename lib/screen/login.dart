@@ -101,8 +101,8 @@ class _LoginScreen1State extends State<LoginPage> {
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Color(0xff12baa1),
-                  Color(0xff03302d),
+                  Color.fromARGB(255, 137, 15, 153),
+                  Color.fromARGB(255, 67, 7, 75),
                 ],
               ),
             ),
@@ -144,7 +144,7 @@ class _LoginScreen1State extends State<LoginPage> {
                       },
                       decoration: InputDecoration(
                         suffixIcon: _isEmailValid
-                            ? const Icon(Icons.check, color: Colors.green)
+                            ? const Icon(Icons.check, color: Color.fromARGB(255, 137, 15, 153))
                             : const Icon(Icons.error, color: Colors.black),
                         labelText: 'Gmail',
                         labelStyle: const TextStyle(
@@ -209,7 +209,7 @@ class _LoginScreen1State extends State<LoginPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        backgroundColor: const Color(0xff12baa1), // Color del botón
+                        backgroundColor: const Color.fromARGB(255, 137, 15, 153), // Color del botón
                       ),
                     ),
                     const SizedBox(height: 150),
